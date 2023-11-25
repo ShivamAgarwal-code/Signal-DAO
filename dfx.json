@@ -1,0 +1,38 @@
+{
+  "canisters": {
+    "signals": {
+      "candid": "src/signals/signals.did",
+      "package": "signals",
+      "type": "rust"
+    },
+    "signals_assets": {
+      "dependencies": [
+        "signals"
+      ],
+      "frontend": {
+        "entrypoint": "src/signals_assets/src/index.html"
+      },
+      "source": [
+        "src/signals_assets/assets",
+        "dist/signals_assets/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    },
+    "replica": {
+      "subnet_type":"system"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
+}

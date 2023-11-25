@@ -1,0 +1,231 @@
+type Message = record {
+    "identity": Profile;
+    "contents": text;
+    "time": nat64;
+};
+
+type Profile = record {
+    "name": text;
+    "principal": principal;
+    "profile_pic_url": text;
+};
+
+type Coordinate = record {
+    "lat": float64;
+    "long": float64;
+};
+
+type SignalType = variant {
+  Chat;
+  Trade;
+  Event;
+};
+
+type Signal = record {
+    "created_at": nat64;
+    "updated_at": nat64;
+    "user": principal;
+    "location": Coordinate;
+    "metadata": text;
+    "id": int;
+    "messages": vec Message;
+    "signal_type": SignalType;
+};
+
+type AccTokens = record {
+    e8s: nat64
+};
+
+type SaleTransferArgs = record {
+    amount: AccTokens;
+    to_principal: principal;
+    to_subaccount: opt blob
+};
+
+type Memo = nat64;
+
+type SaleTransferResult = variant {
+    Ok: Memo;
+    Err: text;
+};
+
+type Tokens = record {
+    amount: nat64;
+};
+
+type ProposalParams = record {
+    amount: nat64;
+};
+
+type ProposalState = variant {
+    // The proposal is open for voting
+    Open;
+
+    // Enough "yes" votes have been cast to accept the proposal, and it will soon be executed
+    Accepted;
+
+    // Enough "no" votes have been cast to reject the proposal, and it will not be executed
+    Rejected;
+
+    // The proposal is currently being executed
+    Executing;
+
+    // The proposal has been successfully executed
+    Succeeded;
+
+    // A failure occurred while executing the proposal
+    Failed: text;
+};
+
+type Proposal = record {
+    id: nat64;
+    timestamp: nat64;
+    proposer: principal;
+    payload: ProposalPayload;
+    state: ProposalState;
+    votes_yes: Tokens;
+    votes_no: Tokens;
+    voters: vec principal;
+};
+
+type ProposalPayload = record {
+    canister_id: principal;
+    method: text;
+    message: blob;
+    metadata: text;
+};
+
+type SubmitProposalResult = variant {
+    Ok: nat64;
+    Err: text;
+};
+
+type Vote = variant {
+    Yes;
+    No;
+};
+
+type Account = record {
+    owner: principal;
+    tokens: Tokens;
+};
+
+type TransferArgs = record {
+    to: principal;
+    amount: Tokens;
+};
+
+type TransferResult = variant {
+    Ok;
+    Err: text;
+};
+
+type VoteArgs = record {
+    proposal_id: nat64;
+    vote: Vote;
+};
+
+type VoteResult = variant {
+    Ok: ProposalState;
+    Err: text;
+};
+
+type SystemParams = record {
+    tokens_received_for_signal_creation: ProposalParams;
+    tokens_received_for_upvoted_signal: ProposalParams;
+    downvotes_required_before_delete: ProposalParams;
+    upvotes_required_before_token_minting: ProposalParams;
+    transfer_fee: Tokens;
+    proposal_vote_threshold: Tokens;
+    proposal_submission_deposit: Tokens;
+};
+
+type UpdateSystemParamsPayload = record {
+    tokens_received_for_signal_creation: opt ProposalParams;
+    tokens_received_for_upvoted_signal: opt ProposalParams;
+    downvotes_required_before_delete: opt ProposalParams;
+    upvotes_required_before_token_minting: opt ProposalParams;
+    transfer_fee: opt Tokens;
+    proposal_vote_threshold: opt Tokens;
+    proposal_submission_deposit: opt Tokens;
+};
+
+type TicketedEvent = record {
+    event_owner: principal;
+    number_of_tickets: nat32;
+    issued_passes: vec principal;
+};
+
+type TokenIndex = nat64;
+
+type Error = variant {
+    CanisterError : record { 
+        message : text;
+    };
+    CannotNotify;
+    NoSuchToken;
+    NotOwner;
+    Unauthorized;
+};
+
+type ManageResult = variant {
+    Ok;
+    Err : Error;
+};
+
+type DepositReceipt = 
+ variant {
+   Err: DepositErr;
+   Ok: nat;
+};
+
+type DepositErr = 
+ variant {
+   BalanceLow;
+   TransferFailure;
+};
+
+service : (custodians : opt vec principal) -> {
+    // User related
+    "update_user": (Profile) -> ();
+    "get_user_self": () -> (Profile) query;
+    "whoami": () -> (principal) query;
+    "get_user_for_signal_location": (Coordinate) -> (Profile) query;
+    
+    // signal related
+    "create_new_signal": (Coordinate, text, SignalType) -> (Signal);
+    "get_signal": (Coordinate) -> (Signal);
+    "add_new_message": (Coordinate, text) -> (Signal);
+    "get_all_signals": () -> (vec Signal) query;
+    "get_signals_for_user": (principal) -> (vec Signal) query;
+    "delete_signal": (Coordinate) -> ();
+    "get_principal_for_signal_coordinates": (Coordinate) -> (principal) query;
+
+    // Ratings related functionality
+    "leave_rating": (int, bool) -> ();
+    "get_rating_for_signal": (Coordinate) -> (int32) query;
+    "principal_can_rate_signal": (principal, int) -> (bool) query;
+
+    // DAO related functionality
+    get_system_params: () -> (SystemParams);
+    transfer: (TransferArgs) -> (TransferResult);
+    account_balance: () -> (Tokens) query;
+    list_accounts: () -> (vec Account) query;
+    submit_proposal: (ProposalPayload) -> (SubmitProposalResult);
+    get_proposal: (nat64) -> (opt Proposal);
+    list_proposals: () -> (vec Proposal);
+    vote: (VoteArgs) -> (VoteResult);
+    update_system_params: (UpdateSystemParamsPayload) -> ();
+
+    // Trade and Sale related functionality
+    transfer_sale: (SaleTransferArgs) -> (SaleTransferResult);
+    claim_sale: (int) -> (TransferResult);
+    buy_item: (int, nat64) ->  (DepositReceipt);
+
+    // Event passes
+    create_ticketed_signal: (Coordinate, text, SignalType, nat32) -> (Signal);
+    claim_ticket: (int) -> ();
+    check_ticket: (int, principal) -> (bool) query;
+    get_event_details: (int) -> (TicketedEvent) query;
+    get_all_ticketed_events: () -> (vec TicketedEvent) query;
+}
