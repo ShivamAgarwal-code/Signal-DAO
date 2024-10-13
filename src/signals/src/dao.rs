@@ -2,7 +2,7 @@ use crate::types::*;
 use crate::utils::caller;
 use ic_cdk::export::candid::{CandidType, Deserialize};
 use ic_cdk::export::Principal;
-
+use std::collections::Map;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Default, CandidType, Deserialize)]
@@ -11,6 +11,7 @@ pub struct SignalDaoService {
     pub proposals: HashMap<u64, Proposal>,
     pub next_proposal_id: u64,
     pub system_params: SystemParams,
+    pub next_proposal_id: u128,
 }
 
 impl Default for SystemParams {
@@ -35,7 +36,7 @@ impl SignalDaoService {
     pub fn mint(&mut self, user: Principal, amount: u64) {
         match self.accounts.get_mut(&user) {
             Some(tokens) => {
-                *tokens = *tokens + SignalsTokens { amount: amount };
+                *tokens += SignalsTokens { amount: amount };
             }
             None => {
                 self.create_account(user, amount);
