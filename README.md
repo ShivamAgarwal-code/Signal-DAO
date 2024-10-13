@@ -185,3 +185,8 @@ Before the app is a feasible app it really needs a general refactor to be effici
 ## Profile Related
 
 -   Allow users to upload a Profile pic (maybe via IPFS)
+  
+## Updated Features
+
+- Enhanced UI
+- Got rid of minor bugs
