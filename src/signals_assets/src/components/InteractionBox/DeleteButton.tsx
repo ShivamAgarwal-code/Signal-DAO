@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	ThumbDownIcon as ThumbDownIconSolid,
 	ThumbUpIcon as ThumbUpIconSolid,
